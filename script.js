@@ -1,5 +1,6 @@
 (function () {
   const envelopeWrap = document.getElementById("envelope-wrap");
+  const envelopeStage = document.getElementById("envelope-stage");
   const envelope = document.getElementById("envelope");
   const seal = document.getElementById("seal");
   const letterPanel = document.getElementById("letter-panel");
@@ -13,6 +14,7 @@
   function openLetter() {
     if (envelope.classList.contains("is-open")) return;
     envelope.classList.add("is-open");
+    envelopeStage?.classList.add("is-open");
     setTimeout(() => {
       envelopeWrap.classList.add("is-hidden");
       letterPanel.hidden = false;
@@ -61,32 +63,76 @@
     }
 
     const clone = letterContent.cloneNode(true);
-    clone.style.width = "520px";
-    clone.style.boxSizing = "border-box";
-    clone.style.padding = "44px 52px";
-    clone.style.fontSize = "14pt";
-    clone.style.lineHeight = "1.88";
-    clone.style.color = "#2c2420";
-    clone.style.background = "#fdf8f3";
-    clone.style.fontFamily = '"Tiro Devanagari Marathi", "Noto Serif Devanagari", serif';
+    clone.removeAttribute("id");
+    /* Keep typography hooks; pdf-export-clone overrides opacity/animation (see styles.css) */
+    clone.className = "letter-paper letter-paper--mr pdf-export-clone";
+    clone.style.cssText = [
+      "box-sizing: border-box",
+      "width: 520px",
+      "max-width: 100%",
+      "padding: 44px 52px",
+      "font-size: 14pt",
+      "line-height: 1.88",
+      "color: #2c2420",
+      "background: #fdf8f3",
+      'font-family: "Tiro Devanagari Marathi", "Noto Serif Devanagari", Georgia, serif',
+      "opacity: 1",
+      "visibility: visible",
+      "transform: none",
+      "position: relative",
+      "animation: none",
+    ].join("; ");
 
     const wrapper = document.createElement("div");
-    wrapper.style.position = "fixed";
-    wrapper.style.left = "-9999px";
-    wrapper.style.top = "0";
+    /* Off-screen capture often yields empty canvas in WebKit; keep in viewport but nearly invisible */
+    wrapper.setAttribute("aria-hidden", "true");
+    wrapper.style.cssText = [
+      "position: fixed",
+      "left: 0",
+      "top: 0",
+      "width: 520px",
+      "z-index: 2147483646",
+      "opacity: 0.02",
+      "pointer-events: none",
+      "overflow: hidden",
+    ].join("; ");
+
     wrapper.appendChild(clone);
     document.body.appendChild(wrapper);
+
+    if (document.fonts?.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const opt = {
       margin: [12, 12, 12, 12],
       filename: "samruddhi-patra.pdf",
       image: { type: "jpeg", quality: 0.96 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        logging: false,
+        backgroundColor: "#fdf8f3",
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+      },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
     };
 
     try {
       await html2pdf().set(opt).from(clone).save();
+    } catch (err) {
+      console.error(err);
+      window.print();
     } finally {
       wrapper.remove();
     }
