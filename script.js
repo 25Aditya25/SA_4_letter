@@ -61,11 +61,11 @@
     }
 
     const clone = letterContent.cloneNode(true);
-    clone.style.width = "480px";
+    clone.style.width = "520px";
     clone.style.boxSizing = "border-box";
-    clone.style.padding = "40px 48px";
-    clone.style.fontSize = "12.5pt";
-    clone.style.lineHeight = "1.85";
+    clone.style.padding = "44px 52px";
+    clone.style.fontSize = "14pt";
+    clone.style.lineHeight = "1.88";
     clone.style.color = "#2c2420";
     clone.style.background = "#fdf8f3";
     clone.style.fontFamily = '"Tiro Devanagari Marathi", "Noto Serif Devanagari", serif';
